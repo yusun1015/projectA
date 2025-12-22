@@ -287,6 +287,15 @@ function switchTab(tabName) {
             }
         }
     }
+
+    // 예산 탭에서 진입 시 요약/리스트 갱신
+    if (tabName === 'budget' && currentProjectId) {
+        const project = projects.find(p => p.id === currentProjectId);
+        if (project) {
+            renderBudgetSummary(project);
+            renderExpenseList(project.expenses || []);
+        }
+    }
 }
 
 // 관리 리스트 렌더링
@@ -861,6 +870,197 @@ function handleActorImageChange(e) {
     reader.readAsDataURL(file);
 }
 
+// =========================
+// 예산 관리
+// =========================
+
+function formatCurrency(amount) {
+    if (amount == null || isNaN(amount)) return '0원';
+    return Number(amount).toLocaleString('ko-KR') + '원';
+}
+
+// 예산 요약 렌더링
+function renderBudgetSummary(project) {
+    const totalEl = document.getElementById('totalBudgetAmount');
+    const usedEl = document.getElementById('usedBudgetAmount');
+    const remainingEl = document.getElementById('remainingBudgetAmount');
+
+    if (!totalEl || !usedEl || !remainingEl) return;
+
+    const total = project.totalBudget || 0;
+    const expenses = project.expenses || [];
+    const used = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const remaining = total - used;
+
+    totalEl.textContent = total > 0 ? formatCurrency(total) : '-';
+    usedEl.textContent = used > 0 ? formatCurrency(used) : '-';
+    remainingEl.textContent = total > 0 ? formatCurrency(remaining) : '-';
+}
+
+// 비용 리스트 렌더링
+function renderExpenseList(expenses) {
+    const expenseList = document.getElementById('expenseList');
+    if (!expenseList) return;
+
+    if (!expenses || expenses.length === 0) {
+        expenseList.innerHTML = '<p class="empty-message">등록된 비용 내역이 없습니다.</p>';
+        return;
+    }
+
+    // 최신 사용일 순 정렬
+    const sorted = [...expenses].sort((a, b) => {
+        const da = new Date(a.date || '1970-01-01');
+        const db = new Date(b.date || '1970-01-01');
+        return db - da;
+    });
+
+    expenseList.innerHTML = sorted.map(expense => `
+        <div class="management-item">
+            <div class="management-item-content">
+                <h4>${escapeHtml(expense.title)}</h4>
+                <p><strong>금액:</strong> ${formatCurrency(expense.amount)}</p>
+                <p><strong>사용일:</strong> ${expense.date || '-'}</p>
+                <p>${escapeHtml(expense.memo || '')}</p>
+            </div>
+            <div class="management-item-actions">
+                <button class="btn btn-edit" onclick="editExpense('${expense.id}')">수정</button>
+                <button class="btn btn-danger" onclick="deleteExpense('${expense.id}')">삭제</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 전체 예산 모달 열기
+function openBudgetTotalModal() {
+    if (!currentProjectId) return;
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
+
+    const modal = document.getElementById('budgetTotalModal');
+    const input = document.getElementById('totalBudgetInput');
+    if (!modal || !input) return;
+
+    input.value = project.totalBudget || 0;
+    modal.style.display = 'block';
+}
+
+// 전체 예산 저장
+function handleBudgetTotalSubmit(e) {
+    e.preventDefault();
+    if (!currentProjectId) return;
+
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
+
+    const input = document.getElementById('totalBudgetInput');
+    const value = Number(input.value || 0);
+    project.totalBudget = isNaN(value) ? 0 : value;
+
+    saveProjects();
+    renderBudgetSummary(project);
+    closeModal('budgetTotalModal');
+}
+
+// 비용 모달 열기
+function openExpenseModal(expenseId = null) {
+    if (!currentProjectId) return;
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
+
+    const modal = document.getElementById('expenseModal');
+    const titleEl = document.getElementById('expenseModalTitle');
+    const form = document.getElementById('expenseForm');
+    if (!modal || !titleEl || !form) return;
+
+    const idInput = document.getElementById('expenseId');
+    const titleInput = document.getElementById('expenseTitle');
+    const amountInput = document.getElementById('expenseAmount');
+    const dateInput = document.getElementById('expenseDate');
+    const memoInput = document.getElementById('expenseMemo');
+
+    if (expenseId) {
+        const expense = project.expenses.find(e => e.id === expenseId);
+        if (!expense) return;
+
+        titleEl.textContent = '비용 사용 기록 수정';
+        idInput.value = expense.id;
+        titleInput.value = expense.title || '';
+        amountInput.value = expense.amount || 0;
+        dateInput.value = expense.date || '';
+        memoInput.value = expense.memo || '';
+    } else {
+        titleEl.textContent = '비용 사용 기록 추가';
+        form.reset();
+        idInput.value = '';
+        // 기본값: 오늘 날짜
+        const today = new Date();
+        dateInput.value = formatDate(today);
+    }
+
+    modal.style.display = 'block';
+}
+
+// 비용 저장
+function handleExpenseSubmit(e) {
+    e.preventDefault();
+    if (!currentProjectId) return;
+
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
+
+    if (!project.expenses) {
+        project.expenses = [];
+    }
+
+    const idInput = document.getElementById('expenseId');
+    const titleInput = document.getElementById('expenseTitle');
+    const amountInput = document.getElementById('expenseAmount');
+    const dateInput = document.getElementById('expenseDate');
+    const memoInput = document.getElementById('expenseMemo');
+
+    const expenseId = idInput.value;
+    const expense = {
+        id: expenseId || Date.now().toString(),
+        title: titleInput.value,
+        amount: Number(amountInput.value || 0),
+        date: dateInput.value,
+        memo: memoInput.value
+    };
+
+    if (expenseId) {
+        const index = project.expenses.findIndex(e2 => e2.id === expenseId);
+        if (index !== -1) {
+            project.expenses[index] = expense;
+        }
+    } else {
+        project.expenses.push(expense);
+    }
+
+    saveProjects();
+    renderBudgetSummary(project);
+    renderExpenseList(project.expenses);
+    closeModal('expenseModal');
+}
+
+// 비용 수정
+function editExpense(expenseId) {
+    openExpenseModal(expenseId);
+}
+
+// 비용 삭제
+function deleteExpense(expenseId) {
+    if (!confirm('이 비용 내역을 삭제하시겠습니까?')) return;
+    if (!currentProjectId) return;
+
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project || !project.expenses) return;
+
+    project.expenses = project.expenses.filter(e => e.id !== expenseId);
+    saveProjects();
+    renderBudgetSummary(project);
+    renderExpenseList(project.expenses);
+}
+
 // 모달 닫기 설정
 function setupModalClose() {
     const modals = ['projectModal', 'scheduleModal', 'staffModal', 'actorModal'];
@@ -908,3 +1108,5 @@ window.editStaff = editStaff;
 window.deleteStaff = deleteStaff;
 window.editActor = editActor;
 window.deleteActor = deleteActor;
+window.editExpense = editExpense;
+window.deleteExpense = deleteExpense;

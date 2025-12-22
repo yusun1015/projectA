@@ -800,6 +800,45 @@ h3 {
     gap: 0.5rem;
 }
 
+/* 예산 요약 카드 */
+.budget-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.budget-card {
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    background: #fafbfc;
+}
+
+.budget-card h4 {
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+    color: #586069;
+}
+
+.budget-card p {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.budget-card.total p {
+    color: #0366d6;
+}
+
+.budget-card.used p {
+    color: #d73a49;
+}
+
+.budget-card.remaining p {
+    color: #22863a;
+}
+
 /* 배우 목록용 아바타/텍스트 정렬 */
 .actor-item .management-item-content {
     display: flex;
