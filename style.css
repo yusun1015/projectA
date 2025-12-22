@@ -1,0 +1,895 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.5;
+    color: #24292e;
+    background-color: #f6f8fa;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+header {
+    background: #ffffff;
+    color: #24292e;
+    padding: 1.5rem 2rem;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.04);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: left;
+    color: #24292e;
+}
+
+section {
+    background: #ffffff;
+    padding: 0;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.04);
+}
+
+/* 뷰 전환 */
+.view-section {
+    display: none;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.view-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+h2 {
+    font-size: 1.25rem;
+    margin: 0;
+    color: #24292e;
+    font-weight: 600;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e1e4e8;
+    background: #fafbfc;
+}
+
+.section-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #24292e;
+    border: none;
+    padding: 0;
+}
+
+h3 {
+    font-size: 1rem;
+    margin: 0;
+    color: #24292e;
+    font-weight: 600;
+}
+
+/* 프로젝트 생성 폼 */
+.project-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #24292e;
+    display: block;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5da;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    background: #ffffff;
+    color: #24292e;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #0366d6;
+    box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+/* 버튼 - GitHub 스타일 */
+.btn {
+    padding: 0.375rem 1rem;
+    border: 1px solid rgba(27, 31, 35, 0.2);
+    border-radius: 3px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.btn-primary {
+    background: #28a745;
+    border-color: #28a745;
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background: #22863a;
+    border-color: #22863a;
+    transform: none;
+}
+
+.btn-secondary {
+    background: #fafbfc;
+    border-color: rgba(27, 31, 35, 0.2);
+    color: #24292e;
+}
+
+.btn-secondary:hover {
+    background: #f3f4f6;
+    border-color: rgba(27, 31, 35, 0.35);
+}
+
+.btn-danger {
+    background: #d73a49;
+    border-color: #d73a49;
+    color: #ffffff;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.btn-danger:hover {
+    background: #cb2431;
+    border-color: #cb2431;
+}
+
+.btn-edit {
+    background: #0366d6;
+    border-color: #0366d6;
+    color: #ffffff;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    margin-right: 0.5rem;
+}
+
+.btn-edit:hover {
+    background: #0256cc;
+    border-color: #0256cc;
+}
+
+/* 프로젝트 목록 */
+.project-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.project-card {
+    background: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 1rem;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.project-card:hover {
+    border-color: #0366d6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    transform: translateY(-1px);
+}
+
+.project-card-content {
+    cursor: pointer;
+    flex: 1;
+}
+
+.project-card h3 {
+    color: #0366d6;
+    margin-bottom: 0.5rem;
+    border-bottom: none;
+    padding: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.project-card p {
+    color: #586069;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.project-card .project-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e1e4e8;
+    font-size: 0.75rem;
+    color: #6a737d;
+}
+
+.project-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e1e4e8;
+    justify-content: flex-end;
+}
+
+.empty-message {
+    text-align: center;
+    color: #6a737d;
+    padding: 3rem 2rem;
+    font-size: 0.875rem;
+}
+
+/* 프로젝트 상세 관리 */
+.detail-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e1e4e8;
+    background: #fafbfc;
+}
+
+.btn-back {
+    background: transparent;
+    border: none;
+    color: #0366d6;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.25rem 0;
+    margin-bottom: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    transition: color 0.2s;
+}
+
+.btn-back:hover {
+    color: #0256cc;
+    text-decoration: underline;
+}
+
+.btn-back span {
+    font-size: 1rem;
+}
+
+.detail-title-group h2 {
+    margin-bottom: 0.25rem;
+    border-bottom: none;
+    padding: 0;
+    color: #24292e;
+    font-size: 1.25rem;
+}
+
+.project-subtitle {
+    color: #6a737d;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* 탭 - GitHub 스타일 */
+.tabs {
+    display: flex;
+    gap: 0;
+    margin: 0;
+    border-bottom: 1px solid #e1e4e8;
+    background: #ffffff;
+    padding: 0 1.5rem;
+}
+
+.tab-btn {
+    padding: 0.5rem 1rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #586069;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: -1px;
+}
+
+.tab-btn:hover {
+    color: #24292e;
+}
+
+.tab-btn.active {
+    color: #24292e;
+    border-bottom-color: #f9826c;
+    font-weight: 600;
+}
+
+.tab-content {
+    display: none;
+    padding: 1.5rem;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.tab-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.tab-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* 검색 입력 */
+.search-box {
+    position: relative;
+}
+
+.search-box input {
+    width: 220px;
+    padding: 0.35rem 0.75rem;
+    padding-left: 1.75rem;
+    border: 1px solid #d1d5da;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    background-color: #ffffff;
+}
+
+.search-box input::placeholder {
+    color: #6a737d;
+}
+
+.search-box::before {
+    content: "🔍";
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    pointer-events: none;
+}
+
+/* 뷰 토글 버튼 - GitHub 스타일 */
+.view-toggle {
+    display: flex;
+    background: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-radius: 3px;
+    padding: 0;
+    gap: 0;
+}
+
+.view-toggle-btn {
+    background: transparent;
+    border: none;
+    border-right: 1px solid #e1e4e8;
+    padding: 0.375rem 0.75rem;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #586069;
+}
+
+.view-toggle-btn:last-child {
+    border-right: none;
+}
+
+.view-toggle-btn:hover {
+    background: #f6f8fa;
+}
+
+.view-toggle-btn.active {
+    background: #f6f8fa;
+    color: #24292e;
+    font-weight: 600;
+}
+
+/* 스케줄 뷰 전환 */
+.schedule-view {
+    display: none;
+}
+
+.schedule-view.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in;
+}
+
+/* 캘린더 스타일 - GitHub 스타일 */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: #f6f8fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 3px;
+}
+
+.calendar-header-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.btn-today {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+.calendar-header h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: #24292e;
+    font-weight: 600;
+}
+
+.btn-icon {
+    background: #ffffff;
+    border: 1px solid #e1e4e8;
+    width: 32px;
+    height: 32px;
+    border-radius: 3px;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #24292e;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: #f6f8fa;
+    border-color: #d1d5da;
+    color: #0366d6;
+}
+
+.calendar-container {
+    background: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #f6f8fa;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+.calendar-weekday {
+    padding: 0.75rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: #586069;
+    text-transform: uppercase;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0;
+    background: #ffffff;
+}
+
+.calendar-day {
+    background: #ffffff;
+    min-height: 100px;
+    padding: 0.5rem;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-right: 1px solid #f1f3f5;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.calendar-day:nth-child(7n) {
+    border-right: none;
+}
+
+.calendar-day:hover {
+    background: #f6f8fa;
+    z-index: 1;
+}
+
+.calendar-day.other-month {
+    background: #fafbfc;
+    color: #d1d5da;
+}
+
+.calendar-day.today {
+    background: #fff5b1;
+    font-weight: 600;
+}
+
+.calendar-day-number {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #24292e;
+    font-size: 0.875rem;
+}
+
+.calendar-day.other-month .calendar-day-number {
+    color: #d1d5da;
+}
+
+.calendar-events {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.calendar-event {
+    background: #0366d6;
+    color: #ffffff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.2s;
+    line-height: 1.4;
+    position: relative;
+    z-index: 2;
+}
+
+.calendar-event:hover {
+    background: #0256cc;
+}
+
+/* 캘린더 스타일 - GitHub 스타일 */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: #f6f8fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 3px;
+}
+
+.calendar-header h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: #24292e;
+    font-weight: 600;
+}
+
+.btn-icon {
+    background: #ffffff;
+    border: 1px solid #e1e4e8;
+    width: 32px;
+    height: 32px;
+    border-radius: 3px;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #24292e;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: #f6f8fa;
+    border-color: #d1d5da;
+    color: #0366d6;
+}
+
+.calendar-container {
+    background: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #f6f8fa;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+.calendar-weekday {
+    padding: 0.75rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: #586069;
+    text-transform: uppercase;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0;
+    background: #ffffff;
+}
+
+.calendar-day {
+    background: #ffffff;
+    min-height: 100px;
+    padding: 0.5rem;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-right: 1px solid #f1f3f5;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.calendar-day:nth-child(7n) {
+    border-right: none;
+}
+
+.calendar-day:hover {
+    background: #f6f8fa;
+    z-index: 1;
+}
+
+.calendar-day.other-month {
+    background: #fafbfc;
+    color: #d1d5da;
+}
+
+.calendar-day.today {
+    background: #fff5b1;
+    font-weight: 600;
+}
+
+.calendar-day-number {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #24292e;
+    font-size: 0.875rem;
+}
+
+.calendar-day.other-month .calendar-day-number {
+    color: #d1d5da;
+}
+
+.calendar-events {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.calendar-event {
+    background: #0366d6;
+    color: #ffffff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.2s;
+    line-height: 1.4;
+    position: relative;
+    z-index: 2;
+}
+
+.calendar-event:hover {
+    background: #0256cc;
+}
+
+/* 관리 리스트 */
+.management-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.management-item {
+    background: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-radius: 3px;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.2s;
+}
+
+.management-item:hover {
+    border-color: #d1d5da;
+}
+
+.management-item-content {
+    flex: 1;
+}
+
+.management-item-content h4 {
+    color: #0366d6;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.management-item-content p {
+    color: #586069;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.management-item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* 모달 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #ffffff;
+    margin: 5% auto;
+    padding: 1.5rem;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
+    position: relative;
+}
+
+.modal-content h3 {
+    margin-bottom: 1rem;
+    color: #24292e;
+    border-bottom: 1px solid #e1e4e8;
+    padding-bottom: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.close {
+    color: #6a737d;
+    float: right;
+    font-size: 1.5rem;
+    font-weight: 400;
+    cursor: pointer;
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+.close:hover,
+.close:focus {
+    color: #24292e;
+    background: #f6f8fa;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .project-form {
+        grid-template-columns: 1fr;
+    }
+
+    .project-list {
+        grid-template-columns: 1fr;
+    }
+
+    .tabs {
+        flex-wrap: wrap;
+    }
+
+    .tab-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .management-item {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .management-item-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
