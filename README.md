@@ -1,2 +1,2 @@
 # projectA
-cating
+casting
