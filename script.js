@@ -89,6 +89,7 @@ function setupEventListeners() {
     document.getElementById('actorForm').addEventListener('submit', handleActorSubmit);
     // 배우 검색
     const actorSearchInput = document.getElementById('actorSearchInput');
+    const actorImageInput = document.getElementById('actorImage');
     if (actorSearchInput) {
         actorSearchInput.addEventListener('input', (e) => {
             actorSearchQuery = e.target.value.trim().toLowerCase();
@@ -97,6 +98,9 @@ function setupEventListeners() {
                 renderActorList(project.actors);
             }
         });
+    }
+    if (actorImageInput) {
+        actorImageInput.addEventListener('change', handleActorImageChange);
     }
 }
 
@@ -400,12 +404,15 @@ function renderActorList(actors) {
     }
     
     actorList.innerHTML = filtered.map(actor => `
-        <div class="management-item">
+        <div class="management-item actor-item">
             <div class="management-item-content">
+                ${actor.image ? `<div class="actor-avatar"><img src="${actor.image}" alt="${escapeHtml(actor.name)}" /></div>` : ''}
+                <div class="actor-text">
                 <h4>${escapeHtml(actor.name)}</h4>
                 <p><strong>역할:</strong> ${escapeHtml(actor.role)}</p>
                 <p><strong>연락처:</strong> ${escapeHtml(actor.contact || '미정')}</p>
                 <p><strong>이메일:</strong> ${escapeHtml(actor.email || '미정')}</p>
+                </div>
             </div>
             <div class="management-item-actions">
                 <button class="btn btn-edit" onclick="editActor('${actor.id}')">수정</button>
@@ -705,6 +712,9 @@ function openActorModal(actorId = null) {
     const modal = document.getElementById('actorModal');
     const form = document.getElementById('actorForm');
     const title = document.getElementById('actorModalTitle');
+    const imageInput = document.getElementById('actorImage');
+    const previewContainer = document.getElementById('actorImagePreviewContainer');
+    const previewImg = document.getElementById('actorImagePreview');
     
     if (actorId) {
         const project = projects.find(p => p.id === currentProjectId);
@@ -713,6 +723,15 @@ function openActorModal(actorId = null) {
             title.textContent = '배우 수정';
             document.getElementById('actorId').value = actor.id;
             document.getElementById('actorName').value = actor.name;
+            if (previewContainer && previewImg) {
+                if (actor.image) {
+                    previewImg.src = actor.image;
+                    previewContainer.style.display = 'block';
+                } else {
+                    previewImg.src = '';
+                    previewContainer.style.display = 'none';
+                }
+            }
             document.getElementById('actorRole').value = actor.role;
             document.getElementById('actorContact').value = actor.contact || '';
             document.getElementById('actorEmail').value = actor.email || '';
@@ -721,6 +740,13 @@ function openActorModal(actorId = null) {
         title.textContent = '배우 추가';
         form.reset();
         document.getElementById('actorId').value = '';
+        if (imageInput) {
+            imageInput.value = '';
+        }
+        if (previewContainer && previewImg) {
+            previewImg.src = '';
+            previewContainer.style.display = 'none';
+        }
     }
     
     modal.style.display = 'block';
@@ -734,26 +760,43 @@ function handleActorSubmit(e) {
     if (!project) return;
     
     const actorId = document.getElementById('actorId').value;
-    const actor = {
-        id: actorId || Date.now().toString(),
-        name: document.getElementById('actorName').value,
-        role: document.getElementById('actorRole').value,
-        contact: document.getElementById('actorContact').value,
-        email: document.getElementById('actorEmail').value
-    };
-    
-    if (actorId) {
-        const index = project.actors.findIndex(a => a.id === actorId);
-        if (index !== -1) {
-            project.actors[index] = actor;
+    const existingActor = actorId ? project.actors.find(a => a.id === actorId) : null;
+    const imageInput = document.getElementById('actorImage');
+    const file = imageInput && imageInput.files ? imageInput.files[0] : null;
+
+    const createOrUpdateActor = (imageData) => {
+        const actor = {
+            id: actorId || Date.now().toString(),
+            name: document.getElementById('actorName').value,
+            role: document.getElementById('actorRole').value,
+            contact: document.getElementById('actorContact').value,
+            email: document.getElementById('actorEmail').value,
+            image: imageData || (existingActor && existingActor.image) || ''
+        };
+
+        if (actorId) {
+            const index = project.actors.findIndex(a => a.id === actorId);
+            if (index !== -1) {
+                project.actors[index] = actor;
+            }
+        } else {
+            project.actors.push(actor);
         }
+
+        saveProjects();
+        renderActorList(project.actors);
+        closeModal('actorModal');
+    };
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            createOrUpdateActor(event.target.result);
+        };
+        reader.readAsDataURL(file);
     } else {
-        project.actors.push(actor);
+        createOrUpdateActor(existingActor && existingActor.image ? existingActor.image : '');
     }
-    
-    saveProjects();
-    renderActorList(project.actors);
-    closeModal('actorModal');
 }
 
 // 배우 수정
@@ -771,6 +814,28 @@ function deleteActor(actorId) {
     project.actors = project.actors.filter(a => a.id !== actorId);
     saveProjects();
     renderActorList(project.actors);
+}
+
+// 배우 이미지 선택 시 미리보기
+function handleActorImageChange(e) {
+    const file = e.target.files && e.target.files[0];
+    const previewContainer = document.getElementById('actorImagePreviewContainer');
+    const previewImg = document.getElementById('actorImagePreview');
+
+    if (!previewContainer || !previewImg) return;
+
+    if (!file) {
+        previewImg.src = '';
+        previewContainer.style.display = 'none';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        previewImg.src = event.target.result;
+        previewContainer.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
 }
 
 // 모달 닫기 설정
