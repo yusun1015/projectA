@@ -102,6 +102,24 @@ function setupEventListeners() {
     if (actorImageInput) {
         actorImageInput.addEventListener('change', handleActorImageChange);
     }
+
+    // 예산 관리
+    const setTotalBudgetBtn = document.getElementById('setTotalBudgetBtn');
+    const addExpenseBtn = document.getElementById('addExpenseBtn');
+    if (setTotalBudgetBtn) {
+        setTotalBudgetBtn.addEventListener('click', openBudgetTotalModal);
+    }
+    if (addExpenseBtn) {
+        addExpenseBtn.addEventListener('click', () => openExpenseModal());
+    }
+    const budgetTotalForm = document.getElementById('budgetTotalForm');
+    const expenseForm = document.getElementById('expenseForm');
+    if (budgetTotalForm) {
+        budgetTotalForm.addEventListener('submit', handleBudgetTotalSubmit);
+    }
+    if (expenseForm) {
+        expenseForm.addEventListener('submit', handleExpenseSubmit);
+    }
 }
 
 // 프로젝트 생성 모달 열기
@@ -170,6 +188,9 @@ function handleProjectSubmit(e) {
         schedules: [],
         staff: [],
         actors: [],
+        // 예산 정보
+        totalBudget: 0,
+        expenses: [],
         createdAt: new Date().toISOString()
     };
     
@@ -283,6 +304,8 @@ function renderManagementLists() {
     }
     renderStaffList(project.staff);
     renderActorList(project.actors);
+    renderBudgetSummary(project);
+    renderExpenseList(project.expenses || []);
 }
 
 // 스케줄 목록 렌더링

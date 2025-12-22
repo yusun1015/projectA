@@ -40,6 +40,7 @@
                     <button class="tab-btn active" data-tab="schedule">스케줄</button>
                     <button class="tab-btn" data-tab="staff">스태프</button>
                     <button class="tab-btn" data-tab="actor">배우</button>
+                    <button class="tab-btn" data-tab="budget">예산</button>
                 </div>
 
                 <!-- 스케줄 관리 탭 -->
@@ -121,6 +122,36 @@
                     </div>
                     <div id="actorList" class="management-list">
                         <p class="empty-message">등록된 배우가 없습니다.</p>
+                    </div>
+                </div>
+                
+                <!-- 예산 관리 탭 -->
+                <div id="budgetTab" class="tab-content">
+                    <div class="tab-header">
+                        <h3>예산 관리</h3>
+                        <div class="tab-actions">
+                            <button id="setTotalBudgetBtn" class="btn btn-secondary">전체 예산 설정</button>
+                            <button id="addExpenseBtn" class="btn btn-primary">비용 사용 기록</button>
+                        </div>
+                    </div>
+                    
+                    <div id="budgetSummary" class="budget-summary">
+                        <div class="budget-card total">
+                            <h4>전체 예산</h4>
+                            <p id="totalBudgetAmount">-</p>
+                        </div>
+                        <div class="budget-card used">
+                            <h4>사용한 비용</h4>
+                            <p id="usedBudgetAmount">-</p>
+                        </div>
+                        <div class="budget-card remaining">
+                            <h4>남은 예산</h4>
+                            <p id="remainingBudgetAmount">-</p>
+                        </div>
+                    </div>
+                    
+                    <div id="expenseList" class="management-list">
+                        <p class="empty-message">등록된 비용 내역이 없습니다.</p>
                     </div>
                 </div>
             </section>
@@ -245,6 +276,49 @@
                 <div class="form-group">
                     <label for="actorEmail">이메일</label>
                     <input type="email" id="actorEmail">
+                </div>
+                <button type="submit" class="btn btn-primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 모달: 전체 예산 설정 -->
+    <div id="budgetTotalModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>전체 예산 설정</h3>
+            <form id="budgetTotalForm">
+                <div class="form-group">
+                    <label for="totalBudgetInput">전체 예산 (원)</label>
+                    <input type="number" id="totalBudgetInput" min="0" step="1000" required>
+                </div>
+                <button type="submit" class="btn btn-primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 모달: 비용 사용 기록 추가/수정 -->
+    <div id="expenseModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="expenseModalTitle">비용 사용 기록</h3>
+            <form id="expenseForm">
+                <input type="hidden" id="expenseId">
+                <div class="form-group">
+                    <label for="expenseTitle">항목</label>
+                    <input type="text" id="expenseTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="expenseAmount">금액 (원)</label>
+                    <input type="number" id="expenseAmount" min="0" step="1000" required>
+                </div>
+                <div class="form-group">
+                    <label for="expenseDate">사용일</label>
+                    <input type="date" id="expenseDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="expenseMemo">메모</label>
+                    <textarea id="expenseMemo" rows="2" placeholder="간단한 설명을 입력하세요."></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">저장</button>
             </form>
