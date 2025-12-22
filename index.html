@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASTING - 영화 프로젝트 관리</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>영화 프로젝트 관리 시스템</h1>
+        </header>
+
+        <main>
+            <!-- 프로젝트 목록 섹션 -->
+            <section id="projectListSection" class="view-section active">
+                <div class="section-header">
+                    <h2>프로젝트 목록</h2>
+                    <button id="createProjectBtn" class="btn btn-primary">+ 새 프로젝트 생성</button>
+                </div>
+                <div id="projectList" class="project-list">
+                    <p class="empty-message">생성된 프로젝트가 없습니다.</p>
+                </div>
+            </section>
+
+            <!-- 프로젝트 상세 관리 섹션 -->
+            <section id="projectDetailSection" class="view-section">
+                <div class="detail-header">
+                    <button id="backToListBtn" class="btn-back">
+                        <span>←</span> 목록으로 돌아가기
+                    </button>
+                    <div class="detail-title-group">
+                        <h2 id="detailProjectName">프로젝트 상세 관리</h2>
+                        <p id="detailProjectDescription" class="project-subtitle"></p>
+                    </div>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="schedule">스케줄</button>
+                    <button class="tab-btn" data-tab="staff">스태프</button>
+                    <button class="tab-btn" data-tab="actor">배우</button>
+                </div>
+
+                <!-- 스케줄 관리 탭 -->
+                <div id="scheduleTab" class="tab-content active">
+                    <div class="tab-header">
+                        <h3>스케줄 관리</h3>
+                        <div class="tab-actions">
+                            <div class="search-box">
+                                <input type="text" id="scheduleSearchInput" placeholder="스케줄 검색 (제목, 장소, 설명, 날짜)" />
+                            </div>
+                            <div class="view-toggle">
+                                <button class="view-toggle-btn" data-view="list" title="리스트 뷰">
+                                    <span>📋</span>
+                                </button>
+                                <button class="view-toggle-btn active" data-view="calendar" title="캘린더 뷰">
+                                    <span>📅</span>
+                                </button>
+                            </div>
+                            <button id="addScheduleBtn" class="btn btn-primary">+ 스케줄 추가</button>
+                        </div>
+                    </div>
+                    <!-- 스케줄 리스트 뷰 -->
+                    <div id="scheduleListView" class="schedule-view">
+                        <div id="scheduleList" class="management-list">
+                            <p class="empty-message">등록된 스케줄이 없습니다.</p>
+                        </div>
+                    </div>
+                    <!-- 스케줄 캘린더 뷰 -->
+                    <div id="scheduleCalendarView" class="schedule-view active">
+                        <div class="calendar-header">
+                            <div class="calendar-header-left">
+                                <button id="prevMonthBtn" class="btn btn-icon">‹</button>
+                                <button id="nextMonthBtn" class="btn btn-icon">›</button>
+                                <button id="todayBtn" class="btn btn-secondary btn-today">오늘</button>
+                            </div>
+                            <h4 id="calendarMonthYear"></h4>
+                        </div>
+                        <div id="calendarContainer" class="calendar-container">
+                            <div class="calendar-weekdays">
+                                <div class="calendar-weekday">일</div>
+                                <div class="calendar-weekday">월</div>
+                                <div class="calendar-weekday">화</div>
+                                <div class="calendar-weekday">수</div>
+                                <div class="calendar-weekday">목</div>
+                                <div class="calendar-weekday">금</div>
+                                <div class="calendar-weekday">토</div>
+                            </div>
+                            <div id="calendarDays" class="calendar-days"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 스태프 관리 탭 -->
+                <div id="staffTab" class="tab-content">
+                    <div class="tab-header">
+                        <h3>스태프 관리</h3>
+                        <div class="tab-actions">
+                            <div class="search-box">
+                                <input type="text" id="staffSearchInput" placeholder="스태프 검색 (이름, 역할, 연락처, 이메일)" />
+                            </div>
+                            <button id="addStaffBtn" class="btn btn-primary">스태프 추가</button>
+                        </div>
+                    </div>
+                    <div id="staffList" class="management-list">
+                        <p class="empty-message">등록된 스태프가 없습니다.</p>
+                    </div>
+                </div>
+
+                <!-- 배우 관리 탭 -->
+                <div id="actorTab" class="tab-content">
+                    <div class="tab-header">
+                        <h3>배우 관리</h3>
+                        <div class="tab-actions">
+                            <div class="search-box">
+                                <input type="text" id="actorSearchInput" placeholder="배우 검색 (이름, 역할, 연락처, 이메일)" />
+                            </div>
+                            <button id="addActorBtn" class="btn btn-primary">배우 추가</button>
+                        </div>
+                    </div>
+                    <div id="actorList" class="management-list">
+                        <p class="empty-message">등록된 배우가 없습니다.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 모달: 프로젝트 생성/수정 -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="projectModalTitle">새 프로젝트 생성</h3>
+            <form id="projectForm" class="project-form">
+                <input type="hidden" id="projectId" name="projectId">
+                <div class="form-group">
+                    <label for="projectName">프로젝트 이름</label>
+                    <input type="text" id="projectName" name="projectName" required>
+                </div>
+                <div class="form-group">
+                    <label for="projectDescription">프로젝트 설명</label>
+                    <textarea id="projectDescription" name="projectDescription" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="projectStartDate">시작일</label>
+                    <input type="date" id="projectStartDate" name="projectStartDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="projectEndDate">종료일</label>
+                    <input type="date" id="projectEndDate" name="projectEndDate" required>
+                </div>
+                <button type="submit" class="btn btn-primary">프로젝트 생성</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 모달: 스케줄 추가/수정 -->
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="scheduleModalTitle">스케줄 추가</h3>
+            <form id="scheduleForm">
+                <input type="hidden" id="scheduleId">
+                <div class="form-group">
+                    <label for="scheduleTitle">제목</label>
+                    <input type="text" id="scheduleTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="scheduleDate">날짜</label>
+                    <input type="date" id="scheduleDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="scheduleTime">시간</label>
+                    <input type="time" id="scheduleTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="scheduleLocation">장소</label>
+                    <input type="text" id="scheduleLocation">
+                </div>
+                <div class="form-group">
+                    <label for="scheduleDescription">설명</label>
+                    <textarea id="scheduleDescription" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 모달: 스태프 추가/수정 -->
+    <div id="staffModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="staffModalTitle">스태프 추가</h3>
+            <form id="staffForm">
+                <input type="hidden" id="staffId">
+                <div class="form-group">
+                    <label for="staffName">이름</label>
+                    <input type="text" id="staffName" required>
+                </div>
+                <div class="form-group">
+                    <label for="staffRole">역할</label>
+                    <input type="text" id="staffRole" required>
+                </div>
+                <div class="form-group">
+                    <label for="staffContact">연락처</label>
+                    <input type="text" id="staffContact">
+                </div>
+                <div class="form-group">
+                    <label for="staffEmail">이메일</label>
+                    <input type="email" id="staffEmail">
+                </div>
+                <button type="submit" class="btn btn-primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 모달: 배우 추가/수정 -->
+    <div id="actorModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="actorModalTitle">배우 추가</h3>
+            <form id="actorForm">
+                <input type="hidden" id="actorId">
+                <div class="form-group">
+                    <label for="actorName">이름</label>
+                    <input type="text" id="actorName" required>
+                </div>
+                <div class="form-group">
+                    <label for="actorRole">역할</label>
+                    <input type="text" id="actorRole" required>
+                </div>
+                <div class="form-group">
+                    <label for="actorContact">연락처</label>
+                    <input type="text" id="actorContact">
+                </div>
+                <div class="form-group">
+                    <label for="actorEmail">이메일</label>
+                    <input type="email" id="actorEmail">
+                </div>
+                <button type="submit" class="btn btn-primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
