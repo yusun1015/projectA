@@ -102,6 +102,7 @@
                             <div class="search-box">
                                 <input type="text" id="staffSearchInput" placeholder="스태프 검색 (이름, 역할, 연락처, 이메일)" />
                             </div>
+                            <button id="importStaffBtn" class="btn btn-secondary">📥 Google 시트에서 가져오기</button>
                             <button id="addStaffBtn" class="btn btn-primary">스태프 추가</button>
                         </div>
                     </div>
@@ -118,6 +119,7 @@
                             <div class="search-box">
                                 <input type="text" id="actorSearchInput" placeholder="배우 검색 (이름, 역할, 연락처, 이메일)" />
                             </div>
+                            <button id="importActorBtn" class="btn btn-secondary">📥 Google 시트에서 가져오기</button>
                             <button id="addActorBtn" class="btn btn-primary">배우 추가</button>
                         </div>
                     </div>
@@ -162,13 +164,56 @@
                         <h3>계약서 관리</h3>
                         <div class="tab-actions">
                             <div class="search-box">
-                                <input type="text" id="contractSearchInput" placeholder="계약서 검색 (인력명, 제목, 메모)" />
+                                <input type="text" id="contractSearchInput" placeholder="계약서 검색 (인력명, 로케이션, 차량, 제목, 메모)" />
                             </div>
                             <button id="addContractBtn" class="btn btn-primary">계약서 추가</button>
                         </div>
                     </div>
-                    <div id="contractList" class="management-list">
-                        <p class="empty-message">등록된 계약서가 없습니다.</p>
+                    <div id="contractList" class="contract-list-grouped">
+                        <!-- 인력 계약서 섹션 -->
+                        <div class="contract-section">
+                            <div class="contract-section-header" onclick="toggleContractSection('person')">
+                                <span class="contract-section-icon">👥</span>
+                                <h4>인력 계약서</h4>
+                                <span class="contract-section-count" id="personContractCount">0</span>
+                                <span class="contract-section-toggle" id="personContractToggle">▼</span>
+                            </div>
+                            <div class="contract-section-content" id="personContractContent">
+                                <div class="management-list" id="personContractList">
+                                    <p class="empty-message">등록된 인력 계약서가 없습니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 로케이션 계약서 섹션 -->
+                        <div class="contract-section">
+                            <div class="contract-section-header" onclick="toggleContractSection('location')">
+                                <span class="contract-section-icon">📍</span>
+                                <h4>로케이션 계약서</h4>
+                                <span class="contract-section-count" id="locationContractCount">0</span>
+                                <span class="contract-section-toggle" id="locationContractToggle">▼</span>
+                            </div>
+                            <div class="contract-section-content" id="locationContractContent">
+                                <div class="management-list" id="locationContractList">
+                                    <p class="empty-message">등록된 로케이션 계약서가 없습니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 차량 계약서 섹션 -->
+                        <div class="contract-section">
+                            <div class="contract-section-header" onclick="toggleContractSection('vehicle')">
+                                <span class="contract-section-icon">🚗</span>
+                                <h4>차량 계약서</h4>
+                                <span class="contract-section-count" id="vehicleContractCount">0</span>
+                                <span class="contract-section-toggle" id="vehicleContractToggle">▼</span>
+                            </div>
+                            <div class="contract-section-content" id="vehicleContractContent">
+                                <div class="management-list" id="vehicleContractList">
+                                    <p class="empty-message">등록된 차량 계약서가 없습니다.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -431,6 +476,50 @@
                     <textarea id="contractMemo" rows="3" placeholder="계약서에 대한 추가 정보를 입력하세요."></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 모달: Google 스프레드시트 가져오기 -->
+    <div id="importSheetModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="importSheetModalTitle">Google 스프레드시트에서 가져오기</h3>
+            <div style="margin-bottom: 1rem; padding: 1rem; background: #fff5b1; border: 1px solid #e1e4e8; border-radius: 3px;">
+                <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">사용 방법:</p>
+                <ol style="margin: 0; padding-left: 1.5rem; font-size: 0.875rem; color: #586069;">
+                    <li>Google 스프레드시트를 "웹에 게시"로 설정하세요</li>
+                    <li>스프레드시트 URL을 아래에 붙여넣으세요</li>
+                    <li>CSV 형식으로 자동 변환되어 가져옵니다</li>
+                </ol>
+            </div>
+            <form id="importSheetForm">
+                <input type="hidden" id="importType" value="">
+                <div class="form-group">
+                    <label for="sheetUrl">Google 스프레드시트 URL</label>
+                    <input type="url" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." required>
+                    <small style="color: #6a737d; font-size: 0.75rem;">스프레드시트의 공유 링크를 입력하세요</small>
+                </div>
+                <div class="form-group">
+                    <label for="sheetMapping">컬럼 매핑 (선택사항)</label>
+                    <div style="font-size: 0.875rem; color: #586069; margin-bottom: 0.5rem;">
+                        <p style="margin: 0 0 0.25rem 0;">스프레드시트의 첫 번째 행이 헤더인 경우, 아래에서 매핑할 수 있습니다:</p>
+                    </div>
+                    <div id="columnMapping" style="display: none;">
+                        <!-- 동적으로 생성됨 -->
+                    </div>
+                    <small style="color: #6a737d; font-size: 0.75rem;">자동 감지되지만, 필요시 수동으로 매핑할 수 있습니다</small>
+                </div>
+                <div id="importPreview" style="display: none; margin-bottom: 1rem;">
+                    <label>미리보기 (최대 5개 행)</label>
+                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e1e4e8; border-radius: 3px; padding: 0.5rem; background: #f6f8fa; font-size: 0.75rem;">
+                        <table id="previewTable" style="width: 100%; border-collapse: collapse;">
+                            <!-- 동적으로 생성됨 -->
+                        </table>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">가져오기</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('importSheetModal')" style="margin-left: 0.5rem;">취소</button>
             </form>
         </div>
     </div>

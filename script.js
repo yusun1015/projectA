@@ -73,6 +73,7 @@ function setupEventListeners() {
     // 스태프 관리
     document.getElementById('addStaffBtn').addEventListener('click', () => openStaffModal());
     document.getElementById('staffForm').addEventListener('submit', handleStaffSubmit);
+    document.getElementById('importStaffBtn').addEventListener('click', () => openImportSheetModal('staff'));
     // 스태프 검색
     const staffSearchInput = document.getElementById('staffSearchInput');
     if (staffSearchInput) {
@@ -88,6 +89,7 @@ function setupEventListeners() {
     // 배우 관리
     document.getElementById('addActorBtn').addEventListener('click', () => openActorModal());
     document.getElementById('actorForm').addEventListener('submit', handleActorSubmit);
+    document.getElementById('importActorBtn').addEventListener('click', () => openImportSheetModal('actor'));
     // 배우 검색
     const actorSearchInput = document.getElementById('actorSearchInput');
     const actorImageInput = document.getElementById('actorImage');
@@ -1103,13 +1105,16 @@ function deleteExpense(expenseId) {
 
 // 모달 닫기 설정
 function setupModalClose() {
-    const modals = ['projectModal', 'scheduleModal', 'staffModal', 'actorModal'];
+    const modals = ['projectModal', 'scheduleModal', 'staffModal', 'actorModal', 'importSheetModal'];
     
     modals.forEach(modalId => {
         const modal = document.getElementById(modalId);
+        if (!modal) return;
         const closeBtn = modal.querySelector('.close');
         
-        closeBtn.addEventListener('click', () => closeModal(modalId));
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => closeModal(modalId));
+        }
         
         window.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -1117,6 +1122,18 @@ function setupModalClose() {
             }
         });
     });
+    
+    // Google 시트 가져오기 폼
+    const importSheetForm = document.getElementById('importSheetForm');
+    if (importSheetForm) {
+        importSheetForm.addEventListener('submit', handleImportSheetSubmit);
+    }
+    
+    // URL 입력 시 미리보기
+    const sheetUrlInput = document.getElementById('sheetUrl');
+    if (sheetUrlInput) {
+        sheetUrlInput.addEventListener('blur', previewSheetData);
+    }
 }
 
 // 모달 닫기
@@ -1137,17 +1154,15 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// 계약서 목록 렌더링
+// 계약서 목록 렌더링 (유형별 폴더 구조)
 function renderContractList(contracts) {
-    const contractList = document.getElementById('contractList');
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
     
     // 검색 필터 적용
     let filtered = [...contracts];
     if (contractSearchQuery) {
         filtered = filtered.filter((c) => {
-            const project = projects.find(p => p.id === currentProjectId);
-            if (!project) return false;
-            
             // 계약서 유형별 정보 수집
             let searchText = '';
             if (c.contractType === 'person') {
@@ -1178,23 +1193,48 @@ function renderContractList(contracts) {
             return target.includes(contractSearchQuery);
         });
     }
+    
+    // 유형별로 분류 (기존 데이터 호환성 고려)
+    const personContracts = filtered.filter(c => {
+        const contractType = c.contractType || (c.personType ? 'person' : null);
+        return contractType === 'person';
+    });
+    const locationContracts = filtered.filter(c => c.contractType === 'location');
+    const vehicleContracts = filtered.filter(c => c.contractType === 'vehicle');
+    
+    // 각 섹션 렌더링
+    renderContractSection('person', personContracts, project);
+    renderContractSection('location', locationContracts, project);
+    renderContractSection('vehicle', vehicleContracts, project);
+    
+    // 카운트 업데이트
+    document.getElementById('personContractCount').textContent = personContracts.length;
+    document.getElementById('locationContractCount').textContent = locationContracts.length;
+    document.getElementById('vehicleContractCount').textContent = vehicleContracts.length;
+}
 
-    if (filtered.length === 0) {
-        contractList.innerHTML = '<p class="empty-message">등록된 계약서가 없습니다.</p>';
+// 계약서 섹션 렌더링
+function renderContractSection(type, contracts, project) {
+    const sectionList = document.getElementById(`${type}ContractList`);
+    
+    if (contracts.length === 0) {
+        const typeNames = {
+            'person': '인력',
+            'location': '로케이션',
+            'vehicle': '차량'
+        };
+        sectionList.innerHTML = `<p class="empty-message">등록된 ${typeNames[type]} 계약서가 없습니다.</p>`;
         return;
     }
     
-    const project = projects.find(p => p.id === currentProjectId);
-    if (!project) return;
-    
     // 계약일 기준 내림차순 정렬 (최신순)
-    const sortedContracts = [...filtered].sort((a, b) => {
+    const sortedContracts = [...contracts].sort((a, b) => {
         const dateA = new Date(a.date);
         const dateB = new Date(b.date);
         return dateB - dateA;
     });
     
-    contractList.innerHTML = sortedContracts.map(contract => {
+    sectionList.innerHTML = sortedContracts.map(contract => {
         const fileIcon = contract.fileName ? '📄' : '📝';
         const expiryInfo = contract.expiryDate ? 
             `<p><strong>만료일:</strong> ${contract.expiryDate} ${isContractExpired(contract.expiryDate) ? '<span style="color: #d73a49; font-weight: 600;">(만료됨)</span>' : ''}</p>` : 
@@ -1202,7 +1242,7 @@ function renderContractList(contracts) {
         
         // 계약서 유형별 정보 표시
         let typeInfo = '';
-        if (contract.contractType === 'person') {
+        if (contract.contractType === 'person' || contract.personType) {
             // 인력 이름 찾기
             let personName = '';
             let personRole = '';
@@ -1220,13 +1260,11 @@ function renderContractList(contracts) {
                 }
             }
             typeInfo = `
-                <p><strong>유형:</strong> 인력 (${contract.personType === 'actor' ? '배우' : '스태프'})</p>
-                <p><strong>인력:</strong> ${escapeHtml(personName)}</p>
+                <p><strong>인력:</strong> ${escapeHtml(personName)} (${contract.personType === 'actor' ? '배우' : '스태프'})</p>
                 ${personRole ? `<p><strong>역할:</strong> ${escapeHtml(personRole)}</p>` : ''}
             `;
         } else if (contract.contractType === 'location') {
             typeInfo = `
-                <p><strong>유형:</strong> 로케이션</p>
                 <p><strong>이름:</strong> ${escapeHtml(contract.locationName || '')}</p>
                 ${contract.locationAddress ? `<p><strong>주소:</strong> ${escapeHtml(contract.locationAddress)}</p>` : ''}
             `;
@@ -1240,7 +1278,6 @@ function renderContractList(contracts) {
                 'other': '기타'
             };
             typeInfo = `
-                <p><strong>유형:</strong> 차량</p>
                 <p><strong>차량 정보:</strong> ${escapeHtml(contract.vehicleName || '')}</p>
                 ${contract.vehicleType ? `<p><strong>차량 유형:</strong> ${vehicleTypeNames[contract.vehicleType] || contract.vehicleType}</p>` : ''}
             `;
@@ -1264,6 +1301,20 @@ function renderContractList(contracts) {
             </div>
         `;
     }).join('');
+}
+
+// 계약서 섹션 토글 (접기/펼치기)
+function toggleContractSection(type) {
+    const content = document.getElementById(`${type}ContractContent`);
+    const toggle = document.getElementById(`${type}ContractToggle`);
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        toggle.textContent = '▼';
+    } else {
+        content.style.display = 'none';
+        toggle.textContent = '▶';
+    }
 }
 
 // 계약서 만료 여부 확인
@@ -1644,6 +1695,273 @@ function downloadContract(contractId) {
     URL.revokeObjectURL(url);
 }
 
+// Google 스프레드시트에서 가져오기 모달 열기
+function openImportSheetModal(type) {
+    const modal = document.getElementById('importSheetModal');
+    const title = document.getElementById('importSheetModalTitle');
+    const importType = document.getElementById('importType');
+    const form = document.getElementById('importSheetForm');
+    
+    importType.value = type;
+    title.textContent = type === 'staff' ? '스태프 데이터 가져오기' : '배우 데이터 가져오기';
+    form.reset();
+    document.getElementById('sheetUrl').value = '';
+    document.getElementById('importPreview').style.display = 'none';
+    document.getElementById('columnMapping').style.display = 'none';
+    
+    modal.style.display = 'block';
+}
+
+// Google 스프레드시트 URL에서 CSV export URL로 변환
+function convertSheetUrlToCsv(url) {
+    // URL에서 스프레드시트 ID 추출
+    const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (!match) {
+        throw new Error('유효하지 않은 Google 스프레드시트 URL입니다.');
+    }
+    
+    const sheetId = match[1];
+    // CSV export URL 생성
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
+}
+
+// CSV 데이터 파싱
+function parseCSV(csvText) {
+    const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length === 0) return { headers: [], data: [] };
+    
+    const result = [];
+    const headers = parseCSVLine(lines[0]).map(h => h.trim().replace(/^"|"$/g, ''));
+    
+    for (let i = 1; i < lines.length; i++) {
+        const values = parseCSVLine(lines[i]);
+        if (values.length === 0 || values.every(v => !v.trim())) continue; // 빈 행 스킵
+        
+        const row = {};
+        headers.forEach((header, index) => {
+            row[header] = values[index] || '';
+        });
+        result.push(row);
+    }
+    
+    return { headers, data: result };
+}
+
+// CSV 라인 파싱 (쉼표와 따옴표 처리)
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                current += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    result.push(current.trim());
+    return result;
+}
+
+// 스프레드시트 데이터 미리보기
+async function previewSheetData() {
+    const url = document.getElementById('sheetUrl').value.trim();
+    if (!url) return;
+    
+    try {
+        const csvUrl = convertSheetUrlToCsv(url);
+        const response = await fetch(csvUrl);
+        
+        if (!response.ok) {
+            throw new Error('스프레드시트를 가져올 수 없습니다. 스프레드시트가 공개되어 있는지 확인하세요.');
+        }
+        
+        const csvText = await response.text();
+        const { headers, data } = parseCSV(csvText);
+        
+        // 미리보기 표시
+        const previewDiv = document.getElementById('importPreview');
+        const previewTable = document.getElementById('previewTable');
+        
+        if (data.length === 0) {
+            previewDiv.style.display = 'none';
+            return;
+        }
+        
+        // 테이블 생성
+        let html = '<thead><tr>';
+        headers.forEach(header => {
+            html += `<th style="padding: 0.25rem; border: 1px solid #d1d5da; background: #f6f8fa; text-align: left;">${escapeHtml(header)}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        const previewRows = Math.min(5, data.length);
+        for (let i = 0; i < previewRows; i++) {
+            html += '<tr>';
+            headers.forEach(header => {
+                html += `<td style="padding: 0.25rem; border: 1px solid #d1d5da;">${escapeHtml(data[i][header] || '')}</td>`;
+            });
+            html += '</tr>';
+        }
+        html += '</tbody>';
+        
+        previewTable.innerHTML = html;
+        previewDiv.style.display = 'block';
+        
+    } catch (error) {
+        console.error('미리보기 오류:', error);
+        // 에러는 제출 시 처리
+    }
+}
+
+// Google 스프레드시트 가져오기 처리
+async function handleImportSheetSubmit(e) {
+    e.preventDefault();
+    
+    const url = document.getElementById('sheetUrl').value.trim();
+    const importType = document.getElementById('importType').value;
+    
+    if (!url) {
+        alert('스프레드시트 URL을 입력하세요.');
+        return;
+    }
+    
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) {
+        alert('프로젝트를 먼저 선택하세요.');
+        return;
+    }
+    
+    try {
+        // 로딩 표시
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = '가져오는 중...';
+        submitBtn.disabled = true;
+        
+        const csvUrl = convertSheetUrlToCsv(url);
+        const response = await fetch(csvUrl);
+        
+        if (!response.ok) {
+            throw new Error('스프레드시트를 가져올 수 없습니다. 스프레드시트가 "웹에 게시"로 설정되어 있는지 확인하세요.');
+        }
+        
+        const csvText = await response.text();
+        const { headers, data } = parseCSV(csvText);
+        
+        if (data.length === 0) {
+            alert('가져올 데이터가 없습니다.');
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+        
+        // 컬럼 매핑 자동 감지
+        const nameColumns = headers.filter(h => 
+            h.includes('이름') || h.includes('name') || h.includes('Name') || h === '부서' || h === '이름'
+        );
+        const roleColumns = headers.filter(h => 
+            h.includes('역할') || h.includes('role') || h.includes('Role') || h === '역할'
+        );
+        const contactColumns = headers.filter(h => 
+            h.includes('연락처') || h.includes('contact') || h.includes('전화') || h.includes('phone') || h === '연락처'
+        );
+        const emailColumns = headers.filter(h => 
+            h.includes('이메일') || h.includes('email') || h.includes('Email') || h === '이메일'
+        );
+        
+        let importedCount = 0;
+        let skippedCount = 0;
+        
+        data.forEach((row, index) => {
+            // 이름 필수
+            let name = '';
+            if (nameColumns.length > 0) {
+                name = row[nameColumns[0]] || '';
+            } else {
+                // 이름 컬럼을 찾지 못한 경우 첫 번째 컬럼 사용
+                name = Object.values(row)[0] || '';
+            }
+            
+            if (!name || !name.trim()) {
+                skippedCount++;
+                return;
+            }
+            
+            const role = roleColumns.length > 0 ? (row[roleColumns[0]] || '') : '';
+            const contact = contactColumns.length > 0 ? (row[contactColumns[0]] || '') : '';
+            const email = emailColumns.length > 0 ? (row[emailColumns[0]] || '') : '';
+            
+            if (importType === 'staff') {
+                // 중복 확인
+                const exists = project.staff.some(s => s.name === name.trim() && s.contact === contact);
+                if (exists) {
+                    skippedCount++;
+                    return;
+                }
+                
+                project.staff.push({
+                    id: Date.now().toString() + index,
+                    name: name.trim(),
+                    role: role.trim() || '미정',
+                    contact: contact.trim(),
+                    email: email.trim()
+                });
+                importedCount++;
+            } else if (importType === 'actor') {
+                // 중복 확인
+                const exists = project.actors.some(a => a.name === name.trim() && a.contact === contact);
+                if (exists) {
+                    skippedCount++;
+                    return;
+                }
+                
+                project.actors.push({
+                    id: Date.now().toString() + index,
+                    name: name.trim(),
+                    role: role.trim() || '미정',
+                    contact: contact.trim(),
+                    email: email.trim()
+                });
+                importedCount++;
+            }
+        });
+        
+        saveProjects();
+        
+        if (importType === 'staff') {
+            renderStaffList(project.staff);
+        } else {
+            renderActorList(project.actors);
+        }
+        
+        closeModal('importSheetModal');
+        
+        alert(`${importedCount}개의 항목을 가져왔습니다.${skippedCount > 0 ? ` (${skippedCount}개 건너뜀)` : ''}`);
+        
+    } catch (error) {
+        console.error('가져오기 오류:', error);
+        alert(`오류가 발생했습니다: ${error.message}\n\n스프레드시트가 "웹에 게시"로 설정되어 있는지 확인하세요.`);
+    } finally {
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.textContent = '가져오기';
+            submitBtn.disabled = false;
+        }
+    }
+}
+
 // 전역 함수로 등록 (HTML에서 호출하기 위해)
 window.openProjectDetail = openProjectDetail;
 window.editProject = editProject;
@@ -1658,5 +1976,6 @@ window.deleteActor = deleteActor;
 window.editContract = editContract;
 window.deleteContract = deleteContract;
 window.downloadContract = downloadContract;
+window.toggleContractSection = toggleContractSection;
 window.editExpense = editExpense;
 window.deleteExpense = deleteExpense;
