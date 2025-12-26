@@ -136,6 +136,11 @@ function setupEventListeners() {
             }
         });
     }
+    // 계약서 유형 변경 시 필드 표시/숨김
+    const contractType = document.getElementById('contractType');
+    if (contractType) {
+        contractType.addEventListener('change', handleContractTypeChange);
+    }
     // 인력 유형 변경 시 인력 목록 업데이트
     const contractPersonType = document.getElementById('contractPersonType');
     if (contractPersonType) {
@@ -1143,18 +1148,27 @@ function renderContractList(contracts) {
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return false;
             
-            // 인력 이름 찾기
-            let personName = '';
-            if (c.personType === 'actor') {
-                const actor = project.actors.find(a => a.id === c.personId);
-                personName = actor ? actor.name : '';
-            } else if (c.personType === 'staff') {
-                const staff = project.staff.find(s => s.id === c.personId);
-                personName = staff ? staff.name : '';
+            // 계약서 유형별 정보 수집
+            let searchText = '';
+            if (c.contractType === 'person') {
+                // 인력 이름 찾기
+                let personName = '';
+                if (c.personType === 'actor') {
+                    const actor = project.actors.find(a => a.id === c.personId);
+                    personName = actor ? actor.name : '';
+                } else if (c.personType === 'staff') {
+                    const staff = project.staff.find(s => s.id === c.personId);
+                    personName = staff ? staff.name : '';
+                }
+                searchText = personName;
+            } else if (c.contractType === 'location') {
+                searchText = (c.locationName || '') + ' ' + (c.locationAddress || '');
+            } else if (c.contractType === 'vehicle') {
+                searchText = (c.vehicleName || '') + ' ' + (c.vehicleType || '');
             }
             
             const target = [
-                personName,
+                searchText,
                 c.title,
                 c.memo,
             ]
@@ -1181,34 +1195,62 @@ function renderContractList(contracts) {
     });
     
     contractList.innerHTML = sortedContracts.map(contract => {
-        // 인력 이름 찾기
-        let personName = '';
-        let personRole = '';
-        if (contract.personType === 'actor') {
-            const actor = project.actors.find(a => a.id === contract.personId);
-            if (actor) {
-                personName = actor.name;
-                personRole = actor.role;
-            }
-        } else if (contract.personType === 'staff') {
-            const staff = project.staff.find(s => s.id === contract.personId);
-            if (staff) {
-                personName = staff.name;
-                personRole = staff.role;
-            }
-        }
-        
         const fileIcon = contract.fileName ? '📄' : '📝';
         const expiryInfo = contract.expiryDate ? 
             `<p><strong>만료일:</strong> ${contract.expiryDate} ${isContractExpired(contract.expiryDate) ? '<span style="color: #d73a49; font-weight: 600;">(만료됨)</span>' : ''}</p>` : 
             '';
         
+        // 계약서 유형별 정보 표시
+        let typeInfo = '';
+        if (contract.contractType === 'person') {
+            // 인력 이름 찾기
+            let personName = '';
+            let personRole = '';
+            if (contract.personType === 'actor') {
+                const actor = project.actors.find(a => a.id === contract.personId);
+                if (actor) {
+                    personName = actor.name;
+                    personRole = actor.role;
+                }
+            } else if (contract.personType === 'staff') {
+                const staff = project.staff.find(s => s.id === contract.personId);
+                if (staff) {
+                    personName = staff.name;
+                    personRole = staff.role;
+                }
+            }
+            typeInfo = `
+                <p><strong>유형:</strong> 인력 (${contract.personType === 'actor' ? '배우' : '스태프'})</p>
+                <p><strong>인력:</strong> ${escapeHtml(personName)}</p>
+                ${personRole ? `<p><strong>역할:</strong> ${escapeHtml(personRole)}</p>` : ''}
+            `;
+        } else if (contract.contractType === 'location') {
+            typeInfo = `
+                <p><strong>유형:</strong> 로케이션</p>
+                <p><strong>이름:</strong> ${escapeHtml(contract.locationName || '')}</p>
+                ${contract.locationAddress ? `<p><strong>주소:</strong> ${escapeHtml(contract.locationAddress)}</p>` : ''}
+            `;
+        } else if (contract.contractType === 'vehicle') {
+            const vehicleTypeNames = {
+                'sedan': '승용차',
+                'suv': 'SUV',
+                'van': '밴',
+                'truck': '트럭',
+                'bus': '버스',
+                'other': '기타'
+            };
+            typeInfo = `
+                <p><strong>유형:</strong> 차량</p>
+                <p><strong>차량 정보:</strong> ${escapeHtml(contract.vehicleName || '')}</p>
+                ${contract.vehicleType ? `<p><strong>차량 유형:</strong> ${vehicleTypeNames[contract.vehicleType] || contract.vehicleType}</p>` : ''}
+            `;
+        }
+        
         return `
             <div class="management-item">
                 <div class="management-item-content">
                     <h4>${fileIcon} ${escapeHtml(contract.title)}</h4>
-                    <p><strong>인력:</strong> ${escapeHtml(personName)} (${contract.personType === 'actor' ? '배우' : '스태프'})</p>
-                    ${personRole ? `<p><strong>역할:</strong> ${escapeHtml(personRole)}</p>` : ''}
+                    ${typeInfo}
                     <p><strong>계약일:</strong> ${contract.date}</p>
                     ${expiryInfo}
                     ${contract.fileName ? `<p><strong>파일:</strong> ${escapeHtml(contract.fileName)}</p>` : ''}
@@ -1233,6 +1275,33 @@ function isContractExpired(expiryDate) {
     return expiry < today;
 }
 
+// 계약서 유형 변경 시 필드 표시/숨김
+function handleContractTypeChange() {
+    const contractType = document.getElementById('contractType').value;
+    const personFields = document.getElementById('contractPersonFields');
+    const locationFields = document.getElementById('contractLocationFields');
+    const vehicleFields = document.getElementById('contractVehicleFields');
+    
+    // 모든 필드 숨기기
+    personFields.style.display = 'none';
+    locationFields.style.display = 'none';
+    vehicleFields.style.display = 'none';
+    
+    // 선택된 유형에 따라 필드 표시
+    if (contractType === 'person') {
+        personFields.style.display = 'block';
+        // 인력 유형이 이미 선택되어 있으면 인력 목록 업데이트
+        const personType = document.getElementById('contractPersonType').value;
+        if (personType) {
+            updateContractPersonList();
+        }
+    } else if (contractType === 'location') {
+        locationFields.style.display = 'block';
+    } else if (contractType === 'vehicle') {
+        vehicleFields.style.display = 'block';
+    }
+}
+
 // 계약서 모달 열기
 function openContractModal(contractId = null) {
     const modal = document.getElementById('contractModal');
@@ -1245,11 +1314,27 @@ function openContractModal(contractId = null) {
         if (contract) {
             title.textContent = '계약서 수정';
             document.getElementById('contractId').value = contract.id;
-            document.getElementById('contractPersonType').value = contract.personType;
-            updateContractPersonList(); // 인력 목록 업데이트
-            setTimeout(() => {
-                document.getElementById('contractPersonId').value = contract.personId;
-            }, 100);
+            
+            // 계약서 유형 설정 (기존 데이터 호환성 고려)
+            const contractType = contract.contractType || (contract.personType ? 'person' : 'location');
+            document.getElementById('contractType').value = contractType;
+            handleContractTypeChange(); // 필드 표시/숨김
+            
+            // 유형별 필드 값 설정
+            if (contractType === 'person') {
+                document.getElementById('contractPersonType').value = contract.personType || '';
+                updateContractPersonList();
+                setTimeout(() => {
+                    document.getElementById('contractPersonId').value = contract.personId || '';
+                }, 100);
+            } else if (contractType === 'location') {
+                document.getElementById('contractLocationName').value = contract.locationName || '';
+                document.getElementById('contractLocationAddress').value = contract.locationAddress || '';
+            } else if (contractType === 'vehicle') {
+                document.getElementById('contractVehicleName').value = contract.vehicleName || '';
+                document.getElementById('contractVehicleType').value = contract.vehicleType || '';
+            }
+            
             document.getElementById('contractTitle').value = contract.title;
             document.getElementById('contractDate').value = contract.date;
             document.getElementById('contractExpiryDate').value = contract.expiryDate || '';
@@ -1276,6 +1361,10 @@ function openContractModal(contractId = null) {
         document.getElementById('contractId').value = '';
         document.getElementById('contractPersonId').innerHTML = '<option value="">인력 유형을 먼저 선택하세요</option>';
         document.getElementById('contractFilePreviewContainer').style.display = 'none';
+        // 모든 필드 숨기기
+        document.getElementById('contractPersonFields').style.display = 'none';
+        document.getElementById('contractLocationFields').style.display = 'none';
+        document.getElementById('contractVehicleFields').style.display = 'none';
     }
     
     modal.style.display = 'block';
@@ -1380,13 +1469,56 @@ function handleContractSubmit(e) {
     if (!project) return;
     
     const contractId = document.getElementById('contractId').value;
-    const personType = document.getElementById('contractPersonType').value;
-    const personId = document.getElementById('contractPersonId').value;
+    const contractType = document.getElementById('contractType').value;
+    
+    if (!contractType) {
+        alert('계약서 유형을 선택하세요.');
+        return;
+    }
+    
+    // 유형별 필수 필드 검증
+    if (contractType === 'person') {
+        const personType = document.getElementById('contractPersonType').value;
+        const personId = document.getElementById('contractPersonId').value;
+        if (!personType || !personId) {
+            alert('인력 유형과 인력을 선택하세요.');
+            return;
+        }
+    } else if (contractType === 'location') {
+        const locationName = document.getElementById('contractLocationName').value;
+        if (!locationName.trim()) {
+            alert('로케이션 이름을 입력하세요.');
+            return;
+        }
+    } else if (contractType === 'vehicle') {
+        const vehicleName = document.getElementById('contractVehicleName').value;
+        if (!vehicleName.trim()) {
+            alert('차량 정보를 입력하세요.');
+            return;
+        }
+    }
+    
     const title = document.getElementById('contractTitle').value;
     const date = document.getElementById('contractDate').value;
     const expiryDate = document.getElementById('contractExpiryDate').value;
     const memo = document.getElementById('contractMemo').value;
     const fileInput = document.getElementById('contractFile');
+    
+    // 유형별 데이터 수집
+    let contractData = {
+        contractType: contractType
+    };
+    
+    if (contractType === 'person') {
+        contractData.personType = document.getElementById('contractPersonType').value;
+        contractData.personId = document.getElementById('contractPersonId').value;
+    } else if (contractType === 'location') {
+        contractData.locationName = document.getElementById('contractLocationName').value;
+        contractData.locationAddress = document.getElementById('contractLocationAddress').value;
+    } else if (contractType === 'vehicle') {
+        contractData.vehicleName = document.getElementById('contractVehicleName').value;
+        contractData.vehicleType = document.getElementById('contractVehicleType').value;
+    }
     
     // 파일 처리
     let fileData = null;
@@ -1402,7 +1534,7 @@ function handleContractSubmit(e) {
         const reader = new FileReader();
         reader.onload = (event) => {
             fileData = event.target.result;
-            saveContract(contractId, personType, personId, title, date, expiryDate, memo, fileData, fileName, fileType);
+            saveContract(contractId, contractData, title, date, expiryDate, memo, fileData, fileName, fileType);
         };
         reader.readAsDataURL(file);
     } else {
@@ -1415,12 +1547,12 @@ function handleContractSubmit(e) {
                 fileType = existingContract.fileType;
             }
         }
-        saveContract(contractId, personType, personId, title, date, expiryDate, memo, fileData, fileName, fileType);
+        saveContract(contractId, contractData, title, date, expiryDate, memo, fileData, fileName, fileType);
     }
 }
 
 // 계약서 저장 (내부 함수)
-function saveContract(contractId, personType, personId, title, date, expiryDate, memo, fileData, fileName, fileType) {
+function saveContract(contractId, contractData, title, date, expiryDate, memo, fileData, fileName, fileType) {
     const project = projects.find(p => p.id === currentProjectId);
     if (!project) return;
     
@@ -1430,8 +1562,7 @@ function saveContract(contractId, personType, personId, title, date, expiryDate,
     
     const contract = {
         id: contractId || Date.now().toString(),
-        personType: personType,
-        personId: personId,
+        contractType: contractData.contractType,
         title: title,
         date: date,
         expiryDate: expiryDate || null,
@@ -1441,6 +1572,18 @@ function saveContract(contractId, personType, personId, title, date, expiryDate,
         fileType: fileType,
         createdAt: contractId ? project.contracts.find(c => c.id === contractId)?.createdAt || new Date().toISOString() : new Date().toISOString()
     };
+    
+    // 유형별 데이터 추가
+    if (contractData.contractType === 'person') {
+        contract.personType = contractData.personType;
+        contract.personId = contractData.personId;
+    } else if (contractData.contractType === 'location') {
+        contract.locationName = contractData.locationName;
+        contract.locationAddress = contractData.locationAddress;
+    } else if (contractData.contractType === 'vehicle') {
+        contract.vehicleName = contractData.vehicleName;
+        contract.vehicleType = contractData.vehicleType;
+    }
     
     if (contractId) {
         const index = project.contracts.findIndex(c => c.id === contractId);

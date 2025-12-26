@@ -350,18 +350,60 @@
             <form id="contractForm">
                 <input type="hidden" id="contractId">
                 <div class="form-group">
-                    <label for="contractPersonType">인력 유형</label>
-                    <select id="contractPersonType" required>
+                    <label for="contractType">계약서 유형</label>
+                    <select id="contractType" required>
                         <option value="">선택하세요</option>
-                        <option value="actor">배우</option>
-                        <option value="staff">스태프</option>
+                        <option value="person">인력 (배우/스태프)</option>
+                        <option value="location">로케이션</option>
+                        <option value="vehicle">차량</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="contractPersonId">인력 선택</label>
-                    <select id="contractPersonId" required>
-                        <option value="">인력 유형을 먼저 선택하세요</option>
-                    </select>
+                <!-- 인력 관련 필드 -->
+                <div id="contractPersonFields" style="display: none;">
+                    <div class="form-group">
+                        <label for="contractPersonType">인력 유형</label>
+                        <select id="contractPersonType">
+                            <option value="">선택하세요</option>
+                            <option value="actor">배우</option>
+                            <option value="staff">스태프</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="contractPersonId">인력 선택</label>
+                        <select id="contractPersonId">
+                            <option value="">인력 유형을 먼저 선택하세요</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- 로케이션 관련 필드 -->
+                <div id="contractLocationFields" style="display: none;">
+                    <div class="form-group">
+                        <label for="contractLocationName">로케이션 이름</label>
+                        <input type="text" id="contractLocationName" placeholder="예: 서울시 강남구 촬영장">
+                    </div>
+                    <div class="form-group">
+                        <label for="contractLocationAddress">주소</label>
+                        <input type="text" id="contractLocationAddress" placeholder="상세 주소를 입력하세요">
+                    </div>
+                </div>
+                <!-- 차량 관련 필드 -->
+                <div id="contractVehicleFields" style="display: none;">
+                    <div class="form-group">
+                        <label for="contractVehicleName">차량 정보</label>
+                        <input type="text" id="contractVehicleName" placeholder="예: 현대 그랜저 (123가4567)">
+                    </div>
+                    <div class="form-group">
+                        <label for="contractVehicleType">차량 유형</label>
+                        <select id="contractVehicleType">
+                            <option value="">선택하세요</option>
+                            <option value="sedan">승용차</option>
+                            <option value="suv">SUV</option>
+                            <option value="van">밴</option>
+                            <option value="truck">트럭</option>
+                            <option value="bus">버스</option>
+                            <option value="other">기타</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="contractTitle">계약서 제목</label>
