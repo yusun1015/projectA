@@ -7,6 +7,7 @@ let currentCalendarDate = new Date(); // 현재 캘린더에 표시되는 날짜
 let scheduleSearchQuery = '';
 let staffSearchQuery = '';
 let actorSearchQuery = '';
+let contractSearchQuery = '';
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
@@ -120,6 +121,31 @@ function setupEventListeners() {
     if (expenseForm) {
         expenseForm.addEventListener('submit', handleExpenseSubmit);
     }
+
+    // 계약서 관리
+    document.getElementById('addContractBtn').addEventListener('click', () => openContractModal());
+    document.getElementById('contractForm').addEventListener('submit', handleContractSubmit);
+    // 계약서 검색
+    const contractSearchInput = document.getElementById('contractSearchInput');
+    if (contractSearchInput) {
+        contractSearchInput.addEventListener('input', (e) => {
+            contractSearchQuery = e.target.value.trim().toLowerCase();
+            const project = projects.find(p => p.id === currentProjectId);
+            if (project) {
+                renderContractList(project.contracts);
+            }
+        });
+    }
+    // 인력 유형 변경 시 인력 목록 업데이트
+    const contractPersonType = document.getElementById('contractPersonType');
+    if (contractPersonType) {
+        contractPersonType.addEventListener('change', updateContractPersonList);
+    }
+    // 계약서 파일 업로드 미리보기
+    const contractFileInput = document.getElementById('contractFile');
+    if (contractFileInput) {
+        contractFileInput.addEventListener('change', handleContractFileChange);
+    }
 }
 
 // 프로젝트 생성 모달 열기
@@ -188,6 +214,7 @@ function handleProjectSubmit(e) {
         schedules: [],
         staff: [],
         actors: [],
+        contracts: [], // 계약서 정보
         // 예산 정보
         totalBudget: 0,
         expenses: [],
@@ -296,6 +323,13 @@ function switchTab(tabName) {
             renderExpenseList(project.expenses || []);
         }
     }
+    // 계약서 탭에서 진입 시 리스트 갱신
+    if (tabName === 'contract' && currentProjectId) {
+        const project = projects.find(p => p.id === currentProjectId);
+        if (project) {
+            renderContractList(project.contracts || []);
+        }
+    }
 }
 
 // 관리 리스트 렌더링
@@ -313,6 +347,7 @@ function renderManagementLists() {
     }
     renderStaffList(project.staff);
     renderActorList(project.actors);
+    renderContractList(project.contracts || []);
     renderBudgetSummary(project);
     renderExpenseList(project.expenses || []);
 }
@@ -1097,6 +1132,375 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// 계약서 목록 렌더링
+function renderContractList(contracts) {
+    const contractList = document.getElementById('contractList');
+    
+    // 검색 필터 적용
+    let filtered = [...contracts];
+    if (contractSearchQuery) {
+        filtered = filtered.filter((c) => {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return false;
+            
+            // 인력 이름 찾기
+            let personName = '';
+            if (c.personType === 'actor') {
+                const actor = project.actors.find(a => a.id === c.personId);
+                personName = actor ? actor.name : '';
+            } else if (c.personType === 'staff') {
+                const staff = project.staff.find(s => s.id === c.personId);
+                personName = staff ? staff.name : '';
+            }
+            
+            const target = [
+                personName,
+                c.title,
+                c.memo,
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            return target.includes(contractSearchQuery);
+        });
+    }
+
+    if (filtered.length === 0) {
+        contractList.innerHTML = '<p class="empty-message">등록된 계약서가 없습니다.</p>';
+        return;
+    }
+    
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
+    
+    // 계약일 기준 내림차순 정렬 (최신순)
+    const sortedContracts = [...filtered].sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateB - dateA;
+    });
+    
+    contractList.innerHTML = sortedContracts.map(contract => {
+        // 인력 이름 찾기
+        let personName = '';
+        let personRole = '';
+        if (contract.personType === 'actor') {
+            const actor = project.actors.find(a => a.id === contract.personId);
+            if (actor) {
+                personName = actor.name;
+                personRole = actor.role;
+            }
+        } else if (contract.personType === 'staff') {
+            const staff = project.staff.find(s => s.id === contract.personId);
+            if (staff) {
+                personName = staff.name;
+                personRole = staff.role;
+            }
+        }
+        
+        const fileIcon = contract.fileName ? '📄' : '📝';
+        const expiryInfo = contract.expiryDate ? 
+            `<p><strong>만료일:</strong> ${contract.expiryDate} ${isContractExpired(contract.expiryDate) ? '<span style="color: #d73a49; font-weight: 600;">(만료됨)</span>' : ''}</p>` : 
+            '';
+        
+        return `
+            <div class="management-item">
+                <div class="management-item-content">
+                    <h4>${fileIcon} ${escapeHtml(contract.title)}</h4>
+                    <p><strong>인력:</strong> ${escapeHtml(personName)} (${contract.personType === 'actor' ? '배우' : '스태프'})</p>
+                    ${personRole ? `<p><strong>역할:</strong> ${escapeHtml(personRole)}</p>` : ''}
+                    <p><strong>계약일:</strong> ${contract.date}</p>
+                    ${expiryInfo}
+                    ${contract.fileName ? `<p><strong>파일:</strong> ${escapeHtml(contract.fileName)}</p>` : ''}
+                    ${contract.memo ? `<p>${escapeHtml(contract.memo)}</p>` : ''}
+                </div>
+                <div class="management-item-actions">
+                    ${contract.fileData ? `<button class="btn btn-secondary" onclick="downloadContract('${contract.id}')" style="margin-right: 0.5rem;">다운로드</button>` : ''}
+                    <button class="btn btn-edit" onclick="editContract('${contract.id}')">수정</button>
+                    <button class="btn btn-danger" onclick="deleteContract('${contract.id}')">삭제</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 계약서 만료 여부 확인
+function isContractExpired(expiryDate) {
+    if (!expiryDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate);
+    return expiry < today;
+}
+
+// 계약서 모달 열기
+function openContractModal(contractId = null) {
+    const modal = document.getElementById('contractModal');
+    const form = document.getElementById('contractForm');
+    const title = document.getElementById('contractModalTitle');
+    
+    if (contractId) {
+        const project = projects.find(p => p.id === currentProjectId);
+        const contract = project.contracts.find(c => c.id === contractId);
+        if (contract) {
+            title.textContent = '계약서 수정';
+            document.getElementById('contractId').value = contract.id;
+            document.getElementById('contractPersonType').value = contract.personType;
+            updateContractPersonList(); // 인력 목록 업데이트
+            setTimeout(() => {
+                document.getElementById('contractPersonId').value = contract.personId;
+            }, 100);
+            document.getElementById('contractTitle').value = contract.title;
+            document.getElementById('contractDate').value = contract.date;
+            document.getElementById('contractExpiryDate').value = contract.expiryDate || '';
+            document.getElementById('contractMemo').value = contract.memo || '';
+            
+            // 기존 파일 정보 표시
+            if (contract.fileName) {
+                const previewContainer = document.getElementById('contractFilePreviewContainer');
+                const preview = document.getElementById('contractFilePreview');
+                previewContainer.style.display = 'block';
+                preview.innerHTML = `
+                    <div style="padding: 0.5rem; background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 3px;">
+                        <p style="margin: 0; font-size: 0.875rem;"><strong>현재 파일:</strong> ${escapeHtml(contract.fileName)}</p>
+                        <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #6a737d;">새 파일을 선택하면 기존 파일이 교체됩니다.</p>
+                    </div>
+                `;
+            } else {
+                document.getElementById('contractFilePreviewContainer').style.display = 'none';
+            }
+        }
+    } else {
+        title.textContent = '계약서 추가';
+        form.reset();
+        document.getElementById('contractId').value = '';
+        document.getElementById('contractPersonId').innerHTML = '<option value="">인력 유형을 먼저 선택하세요</option>';
+        document.getElementById('contractFilePreviewContainer').style.display = 'none';
+    }
+    
+    modal.style.display = 'block';
+}
+
+// 인력 유형 선택 시 인력 목록 업데이트
+function updateContractPersonList() {
+    const personType = document.getElementById('contractPersonType').value;
+    const personSelect = document.getElementById('contractPersonId');
+    
+    personSelect.innerHTML = '<option value="">선택하세요</option>';
+    
+    if (!personType || !currentProjectId) return;
+    
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
+    
+    if (personType === 'actor') {
+        project.actors.forEach(actor => {
+            const option = document.createElement('option');
+            option.value = actor.id;
+            option.textContent = `${actor.name} (${actor.role})`;
+            personSelect.appendChild(option);
+        });
+    } else if (personType === 'staff') {
+        project.staff.forEach(staff => {
+            const option = document.createElement('option');
+            option.value = staff.id;
+            option.textContent = `${staff.name} (${staff.role})`;
+            personSelect.appendChild(option);
+        });
+    }
+}
+
+// 계약서 파일 업로드 미리보기
+function handleContractFileChange(e) {
+    const file = e.target.files[0];
+    const previewContainer = document.getElementById('contractFilePreviewContainer');
+    const preview = document.getElementById('contractFilePreview');
+    
+    if (!file) {
+        previewContainer.style.display = 'none';
+        return;
+    }
+    
+    previewContainer.style.display = 'block';
+    
+    // 파일 크기 확인 (10MB 제한)
+    if (file.size > 10 * 1024 * 1024) {
+        preview.innerHTML = '<p style="color: #d73a49; font-size: 0.875rem;">파일 크기는 10MB를 초과할 수 없습니다.</p>';
+        e.target.value = '';
+        return;
+    }
+    
+    // 파일 타입 확인
+    const fileType = file.type;
+    const isImage = fileType.startsWith('image/');
+    const isPdf = fileType === 'application/pdf';
+    
+    if (isImage) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            preview.innerHTML = `
+                <div style="margin-top: 0.5rem;">
+                    <img src="${event.target.result}" alt="미리보기" style="max-width: 100%; max-height: 200px; border: 1px solid #e1e4e8; border-radius: 3px;">
+                    <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #6a737d;">${escapeHtml(file.name)} (${formatFileSize(file.size)})</p>
+                </div>
+            `;
+        };
+        reader.readAsDataURL(file);
+    } else if (isPdf) {
+        preview.innerHTML = `
+            <div style="padding: 0.5rem; background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 3px; margin-top: 0.5rem;">
+                <p style="margin: 0; font-size: 0.875rem;">📄 <strong>${escapeHtml(file.name)}</strong></p>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #6a737d;">${formatFileSize(file.size)}</p>
+            </div>
+        `;
+    } else {
+        preview.innerHTML = `
+            <div style="padding: 0.5rem; background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 3px; margin-top: 0.5rem;">
+                <p style="margin: 0; font-size: 0.875rem;">📄 <strong>${escapeHtml(file.name)}</strong></p>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #6a737d;">${formatFileSize(file.size)}</p>
+            </div>
+        `;
+    }
+}
+
+// 파일 크기 포맷팅
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// 계약서 저장
+function handleContractSubmit(e) {
+    e.preventDefault();
+    
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
+    
+    const contractId = document.getElementById('contractId').value;
+    const personType = document.getElementById('contractPersonType').value;
+    const personId = document.getElementById('contractPersonId').value;
+    const title = document.getElementById('contractTitle').value;
+    const date = document.getElementById('contractDate').value;
+    const expiryDate = document.getElementById('contractExpiryDate').value;
+    const memo = document.getElementById('contractMemo').value;
+    const fileInput = document.getElementById('contractFile');
+    
+    // 파일 처리
+    let fileData = null;
+    let fileName = null;
+    let fileType = null;
+    
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        fileName = file.name;
+        fileType = file.type;
+        
+        // 파일을 Base64로 변환
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            fileData = event.target.result;
+            saveContract(contractId, personType, personId, title, date, expiryDate, memo, fileData, fileName, fileType);
+        };
+        reader.readAsDataURL(file);
+    } else {
+        // 기존 파일 유지
+        if (contractId) {
+            const existingContract = project.contracts.find(c => c.id === contractId);
+            if (existingContract) {
+                fileData = existingContract.fileData;
+                fileName = existingContract.fileName;
+                fileType = existingContract.fileType;
+            }
+        }
+        saveContract(contractId, personType, personId, title, date, expiryDate, memo, fileData, fileName, fileType);
+    }
+}
+
+// 계약서 저장 (내부 함수)
+function saveContract(contractId, personType, personId, title, date, expiryDate, memo, fileData, fileName, fileType) {
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
+    
+    if (!project.contracts) {
+        project.contracts = [];
+    }
+    
+    const contract = {
+        id: contractId || Date.now().toString(),
+        personType: personType,
+        personId: personId,
+        title: title,
+        date: date,
+        expiryDate: expiryDate || null,
+        memo: memo || '',
+        fileData: fileData,
+        fileName: fileName,
+        fileType: fileType,
+        createdAt: contractId ? project.contracts.find(c => c.id === contractId)?.createdAt || new Date().toISOString() : new Date().toISOString()
+    };
+    
+    if (contractId) {
+        const index = project.contracts.findIndex(c => c.id === contractId);
+        if (index !== -1) {
+            project.contracts[index] = contract;
+        }
+    } else {
+        project.contracts.push(contract);
+    }
+    
+    saveProjects();
+    renderContractList(project.contracts);
+    closeModal('contractModal');
+}
+
+// 계약서 수정
+function editContract(contractId) {
+    openContractModal(contractId);
+}
+
+// 계약서 삭제
+function deleteContract(contractId) {
+    if (!confirm('이 계약서를 삭제하시겠습니까?')) return;
+    
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
+    
+    project.contracts = (project.contracts || []).filter(c => c.id !== contractId);
+    saveProjects();
+    renderContractList(project.contracts);
+}
+
+// 계약서 다운로드
+function downloadContract(contractId) {
+    const project = projects.find(p => p.id === currentProjectId);
+    if (!project) return;
+    
+    const contract = project.contracts.find(c => c.id === contractId);
+    if (!contract || !contract.fileData) return;
+    
+    // Base64 데이터를 Blob으로 변환
+    const byteCharacters = atob(contract.fileData.split(',')[1]);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: contract.fileType || 'application/octet-stream' });
+    
+    // 다운로드 링크 생성
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = contract.fileName || 'contract';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
 // 전역 함수로 등록 (HTML에서 호출하기 위해)
 window.openProjectDetail = openProjectDetail;
 window.editProject = editProject;
@@ -1108,5 +1512,8 @@ window.editStaff = editStaff;
 window.deleteStaff = deleteStaff;
 window.editActor = editActor;
 window.deleteActor = deleteActor;
+window.editContract = editContract;
+window.deleteContract = deleteContract;
+window.downloadContract = downloadContract;
 window.editExpense = editExpense;
 window.deleteExpense = deleteExpense;

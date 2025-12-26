@@ -41,6 +41,7 @@
                     <button class="tab-btn" data-tab="staff">스태프</button>
                     <button class="tab-btn" data-tab="actor">배우</button>
                     <button class="tab-btn" data-tab="budget">예산</button>
+                    <button class="tab-btn" data-tab="contract">계약서</button>
                 </div>
 
                 <!-- 스케줄 관리 탭 -->
@@ -152,6 +153,22 @@
                     
                     <div id="expenseList" class="management-list">
                         <p class="empty-message">등록된 비용 내역이 없습니다.</p>
+                    </div>
+                </div>
+
+                <!-- 계약서 관리 탭 -->
+                <div id="contractTab" class="tab-content">
+                    <div class="tab-header">
+                        <h3>계약서 관리</h3>
+                        <div class="tab-actions">
+                            <div class="search-box">
+                                <input type="text" id="contractSearchInput" placeholder="계약서 검색 (인력명, 제목, 메모)" />
+                            </div>
+                            <button id="addContractBtn" class="btn btn-primary">계약서 추가</button>
+                        </div>
+                    </div>
+                    <div id="contractList" class="management-list">
+                        <p class="empty-message">등록된 계약서가 없습니다.</p>
                     </div>
                 </div>
             </section>
@@ -319,6 +336,57 @@
                 <div class="form-group">
                     <label for="expenseMemo">메모</label>
                     <textarea id="expenseMemo" rows="2" placeholder="간단한 설명을 입력하세요."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 모달: 계약서 추가/수정 -->
+    <div id="contractModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="contractModalTitle">계약서 추가</h3>
+            <form id="contractForm">
+                <input type="hidden" id="contractId">
+                <div class="form-group">
+                    <label for="contractPersonType">인력 유형</label>
+                    <select id="contractPersonType" required>
+                        <option value="">선택하세요</option>
+                        <option value="actor">배우</option>
+                        <option value="staff">스태프</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="contractPersonId">인력 선택</label>
+                    <select id="contractPersonId" required>
+                        <option value="">인력 유형을 먼저 선택하세요</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="contractTitle">계약서 제목</label>
+                    <input type="text" id="contractTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="contractDate">계약일</label>
+                    <input type="date" id="contractDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="contractExpiryDate">만료일</label>
+                    <input type="date" id="contractExpiryDate">
+                </div>
+                <div class="form-group">
+                    <label for="contractFile">계약서 파일</label>
+                    <input type="file" id="contractFile" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                    <small style="color: #6a737d; font-size: 0.75rem;">PDF, 이미지, 문서 파일을 업로드할 수 있습니다.</small>
+                </div>
+                <div id="contractFilePreviewContainer" class="form-group" style="display: none;">
+                    <label>파일 미리보기</label>
+                    <div id="contractFilePreview" class="file-preview"></div>
+                </div>
+                <div class="form-group">
+                    <label for="contractMemo">메모</label>
+                    <textarea id="contractMemo" rows="3" placeholder="계약서에 대한 추가 정보를 입력하세요."></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">저장</button>
             </form>
